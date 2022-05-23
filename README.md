@@ -311,6 +311,96 @@ public class JpaMain {
 
 ```java
           // JPQL를 사용한 조회
-			List<Member> result = entityManager.createQuery("select m from Member as m", Member.class).getResultList();
-			
+			List<Member> result = entityManager.createQuery("select m from Member as m", Member.class).getResultList();	
 ```
+
+# 4. 영속성 컨텍스트 1
+
+1. 영속성 컨텍스트란
+   
+   - 엔티디를 영구 저장하는 환경이라는 뜻.
+   - EntityManager.persist(entity); => entity를 영속성 컨텍스트에 저장한다.
+   - 영속성 컨텍스트는 논리적인 개넘. 눈에 보이지 않음.
+   - EntityManager를 통해 영속성 컨텍스트에 접근.
+   - 영속성 컨텍스트에는 1차 캐시와 쓰기 지연 SQL 저장소가 존재한다.
+   - 엔티티 매니저와 영속성 컨텍스트는 1:1 관계
+
+2. 엔티티의 생명주기
+  
+   - 비영속 상태
+
+      - 객체를 생성한 상태
+
+	- 영속 상태
+
+      - entityManager의 persist 메서드를 사용해 영속성 컨텍스트에 저장한 상태. 
+      - 트랜잭션의 commit 호출 시 영속성 컨텍스트에 저장된 객체 쿼리가 호출됨
+
+	- 준영속 상태
+  
+		- 영속성 컨텍스트에서 분리(detach)된 상태
+
+
+3. 영속성 컨텍스트의 이점
+
+	- 1차 캐시
+		
+		- DB와 어플리케이션 사이에 1차 캐시가 존재.
+
+
+	- 동일성(identity) 보장
+
+		- Member1 == Member2
+  
+
+	- 트랜잭션을 지원하는 쓰기 지연 (== 버퍼링)
+
+		- 트랜잭션 commit을 해야 쓰기 지연 SQL 저장소에 쌓인 쿼리를 호출함.
+		- JDBC 배치와 같은 효과를 얻을 수 있음
+
+
+	- 변경 감지
+
+		- Member member = em.find(Member.class, 1); ==> 영속성 엔티티 조회
+		-  member.setName("ZZZZ") ==> 영속성 엔티티 수정
+		-  commit() ==> 영속 컨텍스트(엔티티 매니저)의 1차 캐시 스냅샷을 통한 변경감지 후 변경된 내용이 있을 경우 Update쿼리 생성 후 commit
+		-  결론적으로 값이 바뀌면 commit 시 update 쿼리 자동 호출한다.
+
+
+	- 지연로딩
+
+# 5. 플러시
+
+1. 플러시란?
+
+	- 영속성 컨텍스트의 변경 내용을 데이터베이스에 동기화하는 것.
+	- 트랜잭션 커밋 시 플러시는 자동 호출된다.
+	- em.flush 메서드를 통해 직접 호출도 가능하다.
+	- 영속성 컨텍스트를 비우는 것이 아님
+
+
+	```java
+	Member member = new Member(200L, "member200");
+
+	entityManager.persist(member); //영속성 컨텍스트에 저장
+
+	entityManager.flush(); // 쓰기지연 저장소의 쿼리가 실행되며 Database 반영
+
+	```
+
+# 6. 준영속 상태
+
+1. 준영속 상태란
+
+	- 영속 상태에의 엔티티가 영속성 컨텍스트에서 분리(detached)된 상태
+	- em.detach(entity) ==> 특정 엔티티만 영속성 컨텍스트에서 분리
+	- em.clear() ==> 영속성 컨텍스트 자체를 초기화(1차 캐시, 쓰기지연 저장소도 초기화)
+	- em.close() ==> 영속성 컨텍스트를 종료시켜 삭제.
+  
+  ```java
+	Member member = entityManager.find(Member.class, 200L); // 영속상태
+	member.setName("AAAA"); // 더티체킹 == 스냅샷 비교
+			
+	entityManager.detach(member); // 엔티티를 영속성 컨텍스트에서 detach
+	tx.commit(); // update 쿼리가 나가지 않음.
+  ```
