@@ -24,35 +24,19 @@ public class JpaMain {
 		tx.begin();
 		
 		try{
-			// 등록
-			//Member member = new Member();
-			//member.setId(1L);
-			//member.setName("tester");
-			//entityManager.persist(member);
+			Member member = entityManager.find(Member.class, 200L); // 영속상태
+			//member.setName("AAAA"); // 더티체킹 == 스냅샷 비교
 			
-			// 조회
-			Member findMember = entityManager.find(Member.class, 1L);
-			
-			List<Member> result = entityManager.createQuery("select m from Member as m", Member.class).getResultList();
-			
-			for(Member member : result) {
-				System.out.println(member.getName());
-			}
-			// 삭제
-			//entityManager.remove(findMember);
-			
-			// 수정
-			//findMember.setName("Updater");
-			
+			//entityManager.detach(member); // 엔티티를 영속성 컨텍스트에서 detach
+			Member member2 = entityManager.find(Member.class, 200L); // 영속상태
+			System.out.println(member == member2);
+			tx.commit();
 		}catch(Exception e) {
 			tx.rollback();
 		}finally {
 			entityManager.close();
 		}
 		
-		
-		//Transaction 커밋
-		tx.commit();
 		
 		//EntityManager close
 		entityManager.close();
