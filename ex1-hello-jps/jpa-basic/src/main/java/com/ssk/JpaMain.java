@@ -24,22 +24,16 @@ public class JpaMain {
 		tx.begin();
 		
 		try{
-			Member member = entityManager.find(Member.class, 200L); // 영속상태
-			//member.setName("AAAA"); // 더티체킹 == 스냅샷 비교
+			Member member = new Member();
+			member.setUsername("test");
+			entityManager.persist(member);
 			
-			//entityManager.detach(member); // 엔티티를 영속성 컨텍스트에서 detach
-			Member member2 = entityManager.find(Member.class, 200L); // 영속상태
-			System.out.println(member == member2);
 			tx.commit();
 		}catch(Exception e) {
 			tx.rollback();
 		}finally {
 			entityManager.close();
 		}
-		
-		
-		//EntityManager close
-		entityManager.close();
 		
 		//EntityManagerFactory close
 		emf.close();

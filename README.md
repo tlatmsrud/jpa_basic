@@ -404,3 +404,106 @@ public class JpaMain {
 	entityManager.detach(member); // 엔티티를 영속성 컨텍스트에서 detach
 	tx.commit(); // update 쿼리가 나가지 않음.
   ```
+
+# 8. 객체와 테이블 매핑
+
+1. 엔티티 매핑 소개
+
+	- 객체와 테이블 매핑 : @Entity, @Table
+	- 필드와 컬럼매핑 : @Column
+	- 기본키 매핑 : @Id
+	- 연관관계 매핑 : @ManyToOne, @JoinColumn
+
+2. @Entity
+
+	- JPA가 관리하는 클래스. 엔티티라고 칭함.
+	- JPA를 사용해서 테이블과 매핑할 클래스는 @Entity가 필수
+	- 기본 생성자 필수
+
+3. @Table
+   
+   - 엔티티와 매핑할 테이블 지정
+
+
+# 9. 데이터베이스 스키마 자동 생성
+
+- DDL을 어플리케이션 실행 시점에 자동 생성
+- 개발 서버에서만 사용을 권장.
+- 속성 : hibernate.hbm2ddl.auto
+  ```java
+  <property name="hibernate.hbm2ddl.auto" value="create"/>
+  ```
+- 데이터베이스 방언에 따라 생성이 가능.   
+  
+# 10. 필드와 컬럼 매핑
+
+
+1. 매핑 어노테이션
+	
+	- @Column : 컬럼 매핑
+	- @Temporal : 날짜 매핑
+	- @Enumerated : enum 타입 매핑
+	- @Lob : BLOB, CLOB 매핑
+      - CLOB 
+        > 사이즈가 큰 데이터를 외부 파일로 저장하기 위한 데이터 타입   
+	    > 문자열 데이터를 DB 외부에 저장하기 위한 타입   
+		> CLOB의 최대 길이는 외부 저장소에서 생성 가능한 파일 크기   
+		> SQL문에서 문자열 타입으로 표현. CHAR, VARCHAR 등과 호환
+		> 문자형 대용량 파일을 저장하는 타입.
+
+	  - BLOB
+		> 바이너리 데이터릴 DB 외부에 저장하기 위한 타입   
+		> BLOB의 최대 길이는 외부 저장소에서 생성 가능한 파일 크기
+		> SQL문에서 비트열 타입으로 표현. BIT, VIT VARYING 과 호환
+		> 컴퓨터가 인식하는 모든 파일을 저장하는 타입.
+
+	- @Transient 특정 필드를 컬럼에 매핑하지 않음.
+
+2. @Column
+	- 컬럼을 매핑할 때 사용
+	- name : 필드와 매핑할 테이블의 컬럼 이름
+	- insertable, updatable : 등록, 변경 가능여부
+	- nullable(DDL) : null 값의 허용 여부를 설정. false시 not null 제약조건
+	- unique(DDL) : 유니크 제약조건
+	- columnDefinition(DDL) : 데이터베이스 컬럼 정보를 직접 줄 수 있음.
+		> ex) varchar(100) default 'empty'
+	- length : 문자 길이 제약조건
+
+3. @Enumrated
+    - Java enum 타입을 매핑할 때 사용.
+		```java
+		@Enumerated(EnumType.STRING)
+		private RoleType roleType;
+		```
+    - ORDINAL은 사용하면 안됨. 추후 Enum 타입값이 추가될 경우 순서로 인해 버그가 발생
+		> EnumType.ORDINAL : enum 순서를 DB에 저장   
+		> EnumType.STRING : enum 이름을 데이터베이스에 저장.   
+		> 기본 값이 EnumType.ORDINAL
+
+4. @Temporal 속성
+	- 날짜 타입(java.util.Date, java.util.Calendar)을 매핑할 때 사용
+	- LocalDate, LocalDateTime을 사용할 때는 생략 가능(최신 하이버네이트 지원)
+	- TemporalType.Date : 날짜, 데이터베이스 date 타입과 매핑
+	- TemporalType.TIME : 시간, 데이터베이스 time 타입과 매핑
+	- TemporalType.TIMESTAMP : 날짜와 시간, 데이터베이스 timestemp 타입과 매핑
+
+5. @Lob
+	- 매핑하는 필드 타입이 문자면 CLOB 매핑, 나머지는 BLOB 매핑.
+	- LOB에는 속성이 없음.
+
+# 11. 기본키 매핑
+1. 직접 할당
+	- @Id 어노테이션 사용.
+
+2. 값 자동생성
+	- @GeneratedValue 어노테이션 사용.
+	- 자동생성 전략
+		> IDENTITY : 데이터베이스에 위임.   
+		> SEQUNECE : 데이터베이스 시퀀스 오브젝트 사용. @SequenceGenerator
+		> TABLE : 키 생성용 테이블 사용. @TableGenerator
+		> AUTO : 방언에 따라 자동 지정. 기본값.
+
+
+3. IDENTITY 전략
+	- 기본키 생성을 데이터베이스에 위임
+	- JPA는 보통 트랜잭션 커밋 시점에 INSERT SQL 실행
