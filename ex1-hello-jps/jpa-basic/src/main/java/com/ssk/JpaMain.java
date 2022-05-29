@@ -25,7 +25,7 @@ public class JpaMain {
 		
 		try{
 			Member member = new Member();
-			member.setUsername("test");
+			member.setUsername("test8");
 			entityManager.persist(member);
 			
 			tx.commit();
@@ -33,6 +33,23 @@ public class JpaMain {
 			tx.rollback();
 		}finally {
 			entityManager.close();
+		}
+		
+		EntityManager entityManager2 = emf.createEntityManager();
+		
+		//EntityManager에서 Transaction 생성
+		EntityTransaction t2 = entityManager2.getTransaction();
+		try{
+			Member member = new Member();
+			member.setUsername("test9");
+			entityManager2.persist(member);
+			
+			t2.commit();
+		}catch(Exception e) {
+			e.printStackTrace();
+			t2.rollback();
+		}finally {
+			entityManager2.close();
 		}
 		
 		//EntityManagerFactory close

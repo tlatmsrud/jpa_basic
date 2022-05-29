@@ -11,10 +11,15 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Lob;
+import javax.persistence.SequenceGenerator;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 @Entity
+@SequenceGenerator(
+		name = "member_seq_generator",
+		sequenceName= "member_seq",
+		initialValue = 1, allocationSize = 50)
 public class Member {
 
 	public Member() {
@@ -22,8 +27,8 @@ public class Member {
 	}
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private String id;
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "member_seq_generator")
+	private Long id;
 	
 	@Column(name = "name", nullable = false)
 	private String username;
