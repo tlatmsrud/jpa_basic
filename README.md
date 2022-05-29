@@ -499,11 +499,121 @@ public class JpaMain {
 	- @GeneratedValue 어노테이션 사용.
 	- 자동생성 전략
 		> IDENTITY : 데이터베이스에 위임.   
-		> SEQUNECE : 데이터베이스 시퀀스 오브젝트 사용. @SequenceGenerator
-		> TABLE : 키 생성용 테이블 사용. @TableGenerator
+		> SEQUNECE : 데이터베이스 시퀀스 오브젝트 사용. @SequenceGenerator  
+		> TABLE : 키 생성용 테이블 사용. @TableGenerator  
 		> AUTO : 방언에 따라 자동 지정. 기본값.
 
 
 3. IDENTITY 전략
 	- 기본키 생성을 데이터베이스에 위임
 	- JPA는 보통 트랜잭션 커밋 시점에 INSERT SQL 실행
+    - em.persis() 시점에 즉시 INSERT SQL이 실행된다. 
+  
+4. SEQUENCE 전략
+	- ID 타입은 Long을 권장. 공간은 2배 차이가 나지만 서버의 성능차이는 거의 없음.
+	- 시퀀스 이름을 지정하지 않을 경우 자체 제공되는 시퀀스를 사용.
+	- em.persist() 호출 시점에 SQL을 통해 시퀀스 값을 조회하고, flush 시점에 INSERT 쿼리가 실행됨.
+		> Q. 그럼 INSERT 할때마다 시퀀스를 조회하는 네트웤 통신이 있다는 건데, 이거 성능이슈 아닌가요?  
+		>> A. JPA에서는 이런 성능이슈를 최소화하기위해 @SequenceGenerator 옵션의 allocationSize를 제공합니다. 이는 시퀀스 조회 시 Size만큼의 값을 한번의 SQL로 조회 후 메모리에 할당합니다. 그리고 필요할때마다 DB 통신을 하는 것이 아닌 메모리에서 가져오게 됩니다. 기본값은 50입니다.  
+		50이 넘게되면 다시 시퀀스 조회 DB 통신을 하게 됩니다.  
+		
+		> Q. 그럼 기본값을 최대한으로 늘리는 것이 좋지않나요? 왜 50인지 이해가 가지 않습니다.
+		>> A. 맞습니다. 하나의 엔티티 매니저에서 insert하는 로직이 많고, allocationSize 값이 적을수록 시퀀스 조회를 위한 DB 통신 횟수는 증가할 것입니다. 하지만 중간에 서버가 종료된다면 그 값만큼 시퀀스 값이 메모리에서 사라지게 될것이고, 다음 트랜잭션 발생 시 해당 값만큼 건너뛰게되니 비어있는 값이 발생하게 될것입니다. 서버가 다중화 되어있어도 마찬가지입니다. 이때 비어있는 값이 크다면 아무래도 이상하게 느껴지겠죠? 
+
+
+5. TABLE 전략
+	- 키 생성 전용 테이블을 하나 만들어서 데이터베이스 시퀀스를 흉내내는 전략
+	- 단점으로는 테이블에서 키를 조회하는 것이기때문에 성능 이슈 가능성이 있음
+
+6. 권장하는 식별자 전략
+	- 비지니스와 관련된 데이터를 키로 사용하는 것은 권장하지 않음.
+	- Long형 + 대체키 + 키 생성전략 사용
+	- 주민등록번호도 기본키로 적절하지 않다.
+
+# 12. 요구사항 분석과 기본 매핑
+1. 요구사항 분석
+	- 회원은 상품을 주문할 수 있다.
+	- 주문 시 여러 상품을 선택할 수 있다.
+
+2. 도메인 모델 분석
+	- 회원과 주문의 관계 : 회원은 여러 번 주문할 수 있다. (일대다)
+	- 주문과 상품의 관계 : 주문할 때 여러 상품을 선택할 수 있다. 반대로 같은 상품도 여러 번 주문될 수 있다. 주문상품 이라는 모델을 만들어서 다대다 관계를 일대다, 다대일 관계로 풀어냄.
+
+3. 엔티티 모델 설계
+```java
+@Entity
+public class Member {
+
+	@Id @GeneratedValue
+	@Column(name = "MEMBER_ID")
+	private Long id;
+	
+	private String name;
+	
+	private String city;
+	
+	private String street;
+	
+	private String zipCode;
+
+	// Getter Setter...
+	
+}
+
+
+@Entity
+@Table(name = "ORDERS")
+public class Order {
+
+	@Id @GeneratedValue
+	@Column(name = "ORDER_ID")
+	private Long id;
+	
+	@Column(name = "MEMBER_ID")
+	private Long memberId;
+	
+	private LocalDateTime orderDate;
+	
+	@Enumerated(EnumType.STRING)
+	private OrderStatus status;
+
+	// Getter Setter...
+
+}
+
+@Entity
+public class OrderItem {
+
+	@Id @GeneratedValue
+	@Column(name = "ORDER_ITEM_ID")
+	private Long id;
+	
+	@Column(name = "ORDER_ID")
+	private Long orderId;
+	
+	@Column(name = "ITEM_ID")
+	private Long itemId;
+	
+	private int orderPrice;
+	private int count;	
+	
+}
+
+```
+
+4. 데이터 중심 설계의 문제점
+	- 위 방식은 객체 설계를 테이블 설계에 맞춘 방식
+	- 테이블의 외래키를 객체에 그대로 가져옴
+	- 객체 그래프 탐색이 불가능
+	- 참조가 없으므로 UML도 잘못됨.
+	```java
+		// 주문 조회
+		Order order = em.find(Order.class, 1);
+			
+		// 멤버 정보 조회. 객체 그래프 탐색이 불가능하며 참조도 없음.
+		Long memberId = order.getMemberId();
+		Member member = em.find(Member.class, memberId);
+
+		// Memeber memeber = order.getMemeber 형식이 객체지향적.
+	```
+	- __연관관계 매핑__ 을 적용해야함.
