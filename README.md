@@ -617,3 +617,76 @@ public class OrderItem {
 		// Memeber memeber = order.getMemeber 형식이 객체지향적.
 	```
 	- __연관관계 매핑__ 을 적용해야함.
+
+
+# 12. 연관관계 매핑
+1. 목표
+   - 객체와 테이블 연관관계의 차이를 이해
+   - 객체의 참조와 테이블의 외래 키를 매핑
+   - 용어이해
+		> 방향 : 단방향 양방향  
+		> 다중성 : 일대다, 다대일, 일대일, 다대다의 이해  
+		> __연관관계의 주인__ : 객체 양방향 연관관계는 관리 주인이 필요
+
+2. 예제 사나리오
+	- 회원과 팀이 있다.
+	- 회원은 하나의 팀에만 소속될 수 있다.
+	- 회원과 팀은 다대일 관계이다.
+
+3. 모델링
+	![team_member_relation](./team_member_relation.PNG)
+
+4. 객체를 테이블에 맞추어 생성
+   - 테이블은 외래 키로 조인을 사용해서 연관된 테이블을 찾는다.
+   - 객체는 참조를 사용해서 연관된 객체를 찾는다.
+   - 테이블과 객체 사이에는 이런 큰 간격이 있다.
+
+5. 객체 지향 모델링 
+	![team_member_relation2](./team_member_relation2.PNG)
+
+	- Member와 Team은 일대다 관계이며 FK를 가진 Member 테이블이 연관관계의 주인이 된다.
+	- Member 엔티티에 Team 필드 생성 후 다대일을 나타내는 @ManyToOne 을 붙여준다. 즉 Member 엔티티와 Team 엔티티는 다대일 관계라는 의미이다.
+	- 그리고 JoinColumn, 즉 FK Column 명을 넣어준다.
+
+	```java
+	@Entity
+	public class Member {
+
+		public Member() {
+			
+		}
+
+		@Id @GeneratedValue
+		@Column(name = "MEMBER_ID")
+		private Long id;
+		
+		@Column(name = "USERNAME")
+		private String username;
+
+		//멤버입장에서는 다대일 관계
+		@ManyToOne
+		@JoinColumn(name = "TEAM_ID")
+		private Team team;
+
+		//getter, setter ...
+	}
+
+
+	@Entity
+	public class Team {
+
+		public Team() {
+			
+		}
+		@Id @GeneratedValue
+		@Column(name = "TEAM_ID")
+		private long id;
+		
+		@Column(name = "NAME")
+		private String name;
+
+		/// getter, setter ...
+		
+		
+	}
+	```
