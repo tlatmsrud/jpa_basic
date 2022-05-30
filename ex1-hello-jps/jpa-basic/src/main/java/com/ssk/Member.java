@@ -1,19 +1,13 @@
 package com.ssk;
 
 
-import java.util.Date;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Lob;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.SequenceGenerator;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
 
 @Entity
 @SequenceGenerator(
@@ -26,28 +20,25 @@ public class Member {
 		
 	}
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "member_seq_generator")
+	@Id @GeneratedValue
+	@Column(name = "MEMBER_ID")
 	private Long id;
 	
-	@Column(name = "name", nullable = false)
+	@Column(name = "USERNAME")
 	private String username;
 
-	@Column
-	private Integer age;
-	
-	@Enumerated(EnumType.STRING)
-	private RoleType roleType;
-	
-	@Temporal(TemporalType.TIMESTAMP)
-	private Date createdDate;
-	
-	@Temporal(TemporalType.TIMESTAMP)
-	private Date lastModifiedDate;
-	
-	//varchar를 넘어선 큰 자료형 타입
-	@Lob
-	private String description;
+	//멤버입장에서는 다대일 관계
+	@ManyToOne
+	@JoinColumn(name = "TEAM_ID")
+	private Team team;
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
 
 	public String getUsername() {
 		return username;
@@ -56,6 +47,12 @@ public class Member {
 	public void setUsername(String username) {
 		this.username = username;
 	}
-	
-	
+
+	public Team getTeam() {
+		return team;
+	}
+
+	public void setTeam(Team team) {
+		this.team = team;
+	}
 }
