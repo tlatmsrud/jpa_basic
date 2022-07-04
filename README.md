@@ -716,3 +716,22 @@ public class OrderItem {
 	- ManyToOne쪽이 연관관계의 주인.
 	- DB 테이블 기준으로 '다' 쪽이 연관관계의 주인 (FK를 갖는 곳)
 	- 멤버(주인) - 팀, 자동자 - 바퀴(주인)
+
+6. 양방향 매핑 시 가장 많이 하는 실수
+	- 연관관계의 주인에 값을 입력하지 않음.
+
+
+# 14. 연관관계 매핑 시작
+1. 요건
+	> 초간단 쇼핑몰 테이블 구성  
+	> 사용자는 여러건의 주문을 할 수 있다.
+
+2. 테이블 구조
+   ![jap_shop_erd](./jpa_shop_erd.PNG)
+   - 유저는 여러 주문을 하거나,주문을 하지 않을 수 있다. (one 대 many or zero)
+   - 하나의 주문에 여러 상품이 포함될 수 있고, 하나의 상품은 여러 주문에 포함되거나 없을 수 있다.(many 대 many >> one 대 many, many or zero 대 one)
+
+3. 객체구조
+   - Member와 Order : 양방향 연관관계 매핑 (Member 내 orders)
+   - Order와 OrderItem : 양방향 연관관계 매핑 (Order 내 orderItems)
+

@@ -26,9 +26,7 @@ public class JpaMain {
 			// 주문 조회
 			Order order = em.find(Order.class, 1);
 			
-			// 관계형 데이터베이스 중심적인 엔티티 설계 시 멤버 정보 조회
-			Long memberId = order.getMemberId();
-			Member member = em.find(Member.class, memberId);
+		
 			
 			tx.commit();
 		}catch(Exception e) {
