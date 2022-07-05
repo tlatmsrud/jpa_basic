@@ -735,3 +735,26 @@ public class OrderItem {
    - Member와 Order : 양방향 연관관계 매핑 (Member 내 orders)
    - Order와 OrderItem : 양방향 연관관계 매핑 (Order 내 orderItems)
 
+# 15. 연관관계
+1. 연관관계 매핑 시 고려사항
+	1) 다대일 : @ManyToOne
+	2) 일대다 : @OneToMany
+	3) 일대일 : @OneToOne
+
+2. 단방향, 양방향
+   1. 테이블 
+      - 외래키 하나로 양쪽 조인 가능. 방향이라는 개념이 없음
+   1. 객체 
+      - 참조용 필드가 있는 쪽으로만 참조 가능
+      - 한쪽만 참조하면 단방향
+      - 양쪽이 서로 참조하면 양방향
+
+3. 다대일 [N:1]
+    - 멤버와 팀은 N : 1 관계
+    - 멤버 객체가 연관관계의 주인
+
+4. 다대일 양방향
+   	- 팀 객체에 @OneToMany(mappedBy = "team")
+	- 양쪽을 서로 참조하도록 개발
+
+
