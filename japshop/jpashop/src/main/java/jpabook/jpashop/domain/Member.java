@@ -12,8 +12,7 @@ import javax.persistence.OneToMany;
 @Entity
 public class Member {
 
-	@Id @GeneratedValue
-	@Column(name = "MEMBER_ID")
+	@Id
 	private Long id;
 	
 	private String name;
@@ -24,9 +23,6 @@ public class Member {
 	
 	private String zipcode;
 
-	@OneToMany(mappedBy = "member")
-	private List<Order> orders = new ArrayList<Order>();
-	
 	public Long getId() {
 		return id;
 	}
