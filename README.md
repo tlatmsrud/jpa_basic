@@ -309,11 +309,10 @@ public class JpaMain {
 			member.setId(1L);
 			member.setName("tester");
 			em.persist(member);
-				
+			tx.commit();
 		}catch(Exception e) {
 			tx.rollback();
 		}finally {
-			tx.commit();
 			em.close();
 		}
 		
@@ -339,10 +338,11 @@ JPA를 사용하면 엔티티 객체를 중심으로 개발하게 된다. 검색
 
 <br>
 
-# 4. 영속성 컨텍스트 1
+# 4. 영속성 컨텍스트
 
-## 1. 영속성 컨텍스트란
+## 1. 영속성 컨텍스트란? (JPA의 내부 동작 매커니즘과 관련)
    
+   - JPA를 이해하는데 가장 중요한 용어.
    - 엔티디를 영구 저장하는 환경.
    - EntityManager.persist(entity); => entity를 영속성 컨텍스트에 저장한다.
    - 영속성 컨텍스트는 논리적인 개념이며. 눈에 보이지 않음.
@@ -357,34 +357,101 @@ JPA를 사용하면 엔티티 객체를 중심으로 개발하게 된다. 검색
 1) 비영속 상태
    - 영속성 컨텍스트에 저장되지 않은 상태.
    - 객체를 생성한 상태.
+	``` java
+		// 1. 비영속상태 - 객체를 생성한 상태
+		Member member = new Member();
+		member.setId(2L);
+		member.setName("Tester2");
+	```
 
 2) 영속 상태
    - 속성 컨텍스트에 저장한 상태.(persist 메서드 사용)
    - 트랜잭션의 commit 호출 시 영속성 컨텍스트에 저장된 객체 쿼리가 호출됨
 
+	``` java
+		// 1. 비영속상태 - 객체를 생성한 상태
+		Member member = new Member();
+		member.setId(3L);
+		member.setName("Tester3");
+		
+		// 2. 영속상태 - 영속성 컨텍스트에 저장한 상태
+		em.persist(member)
+	```
 3) 준영속 상태
    - 영속성 컨텍스트에서 분리(detach)된 상태
-
+	``` java
+		// 1. 비영속상태 - 객체를 생성한 상태
+		Member member = new Member();
+		member.setId(3L);
+		member.setName("Tester3");
+		
+		// 2. 영속상태 - 영속성 컨텍스트에 저장한 상태
+		em.persist(member);
+		
+		// 3. 준영속상태 - 회원 엔티티를 영속성 컨텍스트에서 분리한 상태
+		em.detach(member);
+	```
 
 ## 3. 영속성 컨텍스트의 이점
-1) 1차 캐시
+1) 1차 캐시의 존재
+   - @Id와 Entity로 구성됨.
+   - find() 시 1차 캐시 내에서 선 조회 후 없을 시 DB에서 조회하여 1차캐시에 저장 후 로드.
    - DB와 어플리케이션 사이에 1차 캐시가 존재하여 동일성이(identity) 보장됨
-   - 트랜잭션을 지원하는 쓰기 지연 (== 버퍼링)
-   - 트랜잭션 commit을 해야 쓰기 지연 SQL 저장소에 쌓인 쿼리를 호출함.
-   - JDBC 배치와 같은 효과를 얻을 수 있음
-   - 지연로딩
-   - 변경 감지
-
-``` java
-	Member member = em.find(Member.class, 1); // 영속성 엔티티 조회
-	member.setName("ZZZZ") //영속성 엔티티 수정
-	commit() // 영속 컨텍스트의 1차 캐시 스냅샷을 통한 변경감지 후 변경된 내용이 있을 경우 Update쿼리 생성 후 commit
-	//결론적으로 값이 바뀌면 commit 시 update 쿼리 자동 호출한다.
-```
-
-
-
+   - 단, 영속성 컨텍스트는 엔티티 매니저에 있고, 하나의 트랜잭션이 끝나면 영속성 컨텍스트는 close 시키는게 일반적이므로 활용도가 낮음.
+	```java
+		Member member = new Member();
+		member.setId(1L);
+		member.setName("Creater");
+			
+		// 영속성 컨텍스트의 1차 캐시에 저장 (영속상태)
+		em.persist(member); 
 	
+		// 1차 캐시에 저장 된 Member 조회하기에 Select 쿼리가 나가지 않음.
+		Member findMember = em.find(Member.class, 1L); 
+
+		//nsert 쿼리 실행
+		tx.commit();
+		
+		// 엔티티 매니저 삭제
+		em.close();
+
+		// 새로운 엔티티 매니저 생성
+		EntityManager em2 = emf.createEntityManager();
+
+		// 1L에 대한 Member가 새롭게 생성된 영속성 컨텍스트의 1차 캐시에 존재하지 않아 Select 쿼리 실행. DB 조회 후 1차 캐시에 저장
+		Member findMember1 = em2.find(Member.class, 1L);
+
+		// 1L에 대한 Member가 1차 캐시에 존재하므로 Select 쿼리가 실행되지 않음.
+		Member findMember2 = em2.find(Member.class, 1L);
+
+		// 동일성 보장 : true
+		System.out.println("동일성 보장 : "+(findMember1 == findMember2));
+	```
+
+2) 트랜잭션을 지원하는 쓰기 지연
+   - em.persist(member) 호출 시 1차 캐시에 저장 후 Insert 쿼리 생성 후 쓰기지연 SQL 저장소에 저장함.
+   - 트랜잭션 commit을 해야 쓰기 지연 SQL 저장소에 쌓인 쿼리를 호출함. commit 호출 시 내부 동작은 다음과 같다.
+      1) 쓰기지연 SQL 저장소 flush (생성된 쿼리를 DB로 보내어 실행)
+      2) 트랜잭션 commit
+   - 쿼리를 모아 한번에 flush 할 수 있음
+
+<br>
+
+3) 변경 감지
+   - 엔티티 매니저 내 영속성 컨텍스트에는 1차 캐시에는 Id와 Entity말고도 스냅샷이라는 속성이 있음. 스냅샷은 1차 캐시로 들어온 최초 상태를 스냅샷으로 떠놓은 것.
+   - commit 메서드 호출 시 엔티티와 스냅샷을 비교 한 후 다를 경우 Update 쿼리를 생성하여 쓰기지연 SQL 저장소에 저장함.
+
+	```java
+		Member member = em.find(Member.class, 1L); // 1차 캐시 조회
+		member.setName("ZZZZ"); // 데이터 수정
+
+		// em.persist() //persist 생략 가능!
+
+		tx.commit(); // Entity와 스냅샷이 다르므로 Update 쿼리 생성 후 쓰기지연 SQL에 저장 및 flush, commit
+	```
+
+<br>
+
 
 # 5. 플러시
 
