@@ -1,13 +1,18 @@
 package jpabook.jpashop.domain;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
+import javax.persistence.Lob;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+
 
 @Entity
 public class Member {
@@ -15,13 +20,27 @@ public class Member {
 	@Id
 	private Long id;
 	
-	private String name;
+	// nullable = not null
+	@Column(name = "name", nullable = false, length = 10)
+	private String username;
 	
-	private String city;
+	private Integer age;
 	
-	private String street;
+	@Enumerated(EnumType.STRING)
+	private RoleType roleType;
+
+	@Temporal(TemporalType.TIMESTAMP)
+	private Date createdDate;
 	
-	private String zipcode;
+	@Temporal(TemporalType.TIMESTAMP)
+	private Date lastModifiedDate;
+	
+	@Lob // 큰 자료형 (문자형 데이터 타입일 형우 clob으로 생성)
+	private String description;
+	
+	public Member() {
+		
+	}
 
 	public Long getId() {
 		return id;
@@ -31,39 +50,21 @@ public class Member {
 		this.id = id;
 	}
 
-	public String getName() {
-		return name;
+	public String getUsername() {
+		return username;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setUsername(String username) {
+		this.username = username;
 	}
 
-	public String getCity() {
-		return city;
+	public RoleType getRoleType() {
+		return roleType;
 	}
 
-	public void setCity(String city) {
-		this.city = city;
+	public void setRoleType(RoleType roleType) {
+		this.roleType = roleType;
 	}
-
-	public String getStreet() {
-		return street;
-	}
-
-	public void setStreet(String street) {
-		this.street = street;
-	}
-
-	public String getZipcode() {
-		return zipcode;
-	}
-
-	public void setZipcode(String zipcode) {
-		this.zipcode = zipcode;
-	}
-
-
 	
 	
 }

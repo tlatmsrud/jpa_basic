@@ -455,130 +455,192 @@ JPA를 사용하면 엔티티 객체를 중심으로 개발하게 된다. 검색
 
 # 5. 플러시
 
-1. 플러시란?
+## 1. 플러시란?
 
-	- 영속성 컨텍스트의 변경 내용을 데이터베이스에 동기화하는 것.
-	- 트랜잭션 커밋 시 플러시는 자동 호출된다.
-	- em.flush 메서드를 통해 직접 호출도 가능하다.
-	- 영속성 컨텍스트를 비우는 것이 아님
+- 영속성 컨텍스트의 변경 내용을 데이터베이스에 동기화(반영)하는 것.
+- tx.commit() 시 플러시가 자동 호출된다.
+- em.flush()로 플러시를 직접 호출한다.
+- JPQL 쿼리 실행 시 플러시가 자동 호출된다.
+- 1차 캐시를 비우는게 아님.
+
+## 2. 플러시 발생시 일어나는 작업
+1) 변경감지(더티체킹)
+2) 수정된 엔티티에 대한 쿼리 생성 후 쓰기지연 SQL 저장소에 등록
+3) 쓰기지연 SQL 저장소의 쿼리를 DB로 전송
 
 
 	```java
-	Member member = new Member(200L, "member200");
-
-	entityManager.persist(member); //영속성 컨텍스트에 저장
-
-	entityManager.flush(); // 쓰기지연 저장소의 쿼리가 실행되며 Database 반영
+		Member member = new Member();
+		member.setId(1L);
+		member.setName("Creater");
+			
+		// 영속성 컨텍스트의 1차 캐시에 저장 (영속상태)
+		em.persist(member); 
+	
+		em.flush();
+		System.out.println("flush 호출 시점에 insert 쿼리가 나간다. 단, 트랜잭션 commit을 하지 않으면 DB에 반영되지 않는다.");
+		
+		tx.commit();
+		emf.close();
 
 	```
 
 # 6. 준영속 상태
 
-1. 준영속 상태란
+## 1. 준영속 상태란
 
-	- 영속 상태에의 엔티티가 영속성 컨텍스트에서 분리(detached)된 상태
-	- em.detach(entity) ==> 특정 엔티티만 영속성 컨텍스트에서 분리
-	- em.clear() ==> 영속성 컨텍스트 자체를 초기화(1차 캐시, 쓰기지연 저장소도 초기화)
-	- em.close() ==> 영속성 컨텍스트를 종료시켜 삭제.
+- 영속 상태에의 엔티티가 영속성 컨텍스트에서 분리(detached)된 상태
+- em.detach(entity) ==> 특정 엔티티만 영속성 컨텍스트에서 분리
+- em.clear() ==> 영속성 컨텍스트 자체를 초기화(1차 캐시, 쓰기지연 SQL 저장소도 초기화)
+- em.close() ==> 영속성 컨텍스트를 종료시켜 삭제.
   
-  ```java
-	Member member = entityManager.find(Member.class, 200L); // 영속상태
-	member.setName("AAAA"); // 더티체킹 == 스냅샷 비교
-			
-	entityManager.detach(member); // 엔티티를 영속성 컨텍스트에서 detach
-	tx.commit(); // update 쿼리가 나가지 않음.
-  ```
+```java
+	Member insertMember = new Member();
+	insertMember.setId(1L);
+	insertMember.setName("Test");
+		
+	// 영속성 컨텍스트의 1차 캐시에 저장 (영속상태)
+	em.persist(insertMember);
 
-# 8. 객체와 테이블 매핑
+	// 영속성 컨텍스트 내 insertMember 엔티티를 준영속상태로 변경
+	em.detach(insertMember);
+	System.out.println("더이상 영속성 컨텍스트 내에서 관리되지 않기 때문에 insert 쿼리가 나가지 않음.");
+```
 
-1. 엔티티 매핑 소개
+# 7. 객체와 테이블 매핑
 
-	- 객체와 테이블 매핑 : @Entity, @Table
-	- 필드와 컬럼매핑 : @Column
-	- 기본키 매핑 : @Id
-	- 연관관계 매핑 : @ManyToOne, @JoinColumn
+## 1. 엔티티 매핑 소개
 
-2. @Entity
+- 객체와 테이블 매핑 : @Entity, @Table
+- 필드와 컬럼매핑 : @Column
+- 기본키 매핑 : @Id
+- 연관관계 매핑 : @ManyToOne, @JoinColumn
 
-	- JPA가 관리하는 클래스. 엔티티라고 칭함.
-	- JPA를 사용해서 테이블과 매핑할 클래스는 @Entity가 필수
-	- 기본 생성자 필수
+<br>
 
-3. @Table
-   
-   - 엔티티와 매핑할 테이블 지정
+## 2. 객체와 테이블 매핑
 
+- @Entity가 붙은 클래스는 JPA가 관리하는 '엔티티'라 칭한다.
+- JPA를 통해 관리하는 테이블 클래스는 @Entity 가 필수이다.
+- 기본 생성자는 반드시 필요하다
+- final, enum, interface, inner 클래스를 사용하면 안된다.
+- 저장할 필드에 final을 사용하면 안된다.
 
-# 9. 데이터베이스 스키마 자동 생성
+<br>
+
+## 3. @Entity
+
+- JPA가 관리하는 클래스. 엔티티라고 칭함.
+- JPA를 사용해서 테이블과 매핑할 클래스는 @Entity가 필수
+- 기본 생성자 필수
+
+<br>
+
+## 4. DB 스키마 자동 생성
 
 - DDL을 어플리케이션 실행 시점에 자동 생성
 - 개발 서버에서만 사용을 권장.
-- 속성 : hibernate.hbm2ddl.auto
+- 속성 키 : hibernate.hbm2ddl.auto
+- 속성 값
+  - create : 테이블 drop 후 create
+  - create-drop : create와 같으나 어플리케이션 종료 시점에 테이블 drop
+  - update : 변경분만 반영
+  - validate : 엔티티와 현재 테이블이 정상 매핑됐는지 확인
   ```java
-  <property name="hibernate.hbm2ddl.auto" value="create"/>
+  	<property name="hibernate.hbm2ddl.auto" value="create"/>
   ```
-- 데이터베이스 방언에 따라 생성이 가능.   
-  
-# 10. 필드와 컬럼 매핑
+- 데이터베이스 방언에 따라 컬럼 생성이 가능.   
 
+<br>
 
-1. 매핑 어노테이션
+# 8. 필드와 컬럼 매핑
+
+## 1. 매핑 어노테이션
 	
-	- @Column : 컬럼 매핑
-	- @Temporal : 날짜 매핑
-	- @Enumerated : enum 타입 매핑
-	- @Lob : BLOB, CLOB 매핑
-      - CLOB 
-        > 사이즈가 큰 데이터를 외부 파일로 저장하기 위한 데이터 타입   
-	    > 문자열 데이터를 DB 외부에 저장하기 위한 타입   
-		> CLOB의 최대 길이는 외부 저장소에서 생성 가능한 파일 크기   
-		> SQL문에서 문자열 타입으로 표현. CHAR, VARCHAR 등과 호환
-		> 문자형 대용량 파일을 저장하는 타입.
+- @Column : 컬럼 매핑
+- @Temporal : 날짜 매핑
+- @Enumerated : enum 타입 매핑
+- @Lob : BLOB, CLOB 매핑
+    - CLOB 
+        - 사이즈가 큰 데이터를 외부 파일로 저장하기 위한 데이터 타입   
+	    - 문자열 데이터를 DB 외부에 저장하기 위한 타입   
+		- CLOB의 최대 길이는 외부 저장소에서 생성 가능한 파일 크기   
+		- SQL문에서 문자열 타입으로 표현. CHAR, VARCHAR 등과 호환
+		- 문자형 대용량 파일을 저장하는 타입.
 
-	  - BLOB
-		> 바이너리 데이터릴 DB 외부에 저장하기 위한 타입   
-		> BLOB의 최대 길이는 외부 저장소에서 생성 가능한 파일 크기
-		> SQL문에서 비트열 타입으로 표현. BIT, VIT VARYING 과 호환
-		> 컴퓨터가 인식하는 모든 파일을 저장하는 타입.
+	- BLOB
+		- 바이너리 데이터릴 DB 외부에 저장하기 위한 타입   
+		- BLOB의 최대 길이는 외부 저장소에서 생성 가능한 파일 크기
+		- SQL문에서 비트열 타입으로 표현. BIT, VIT VARYING 과 호환
+		- 컴퓨터가 인식하는 모든 파일을 저장하는 타입.
 
-	- @Transient 특정 필드를 컬럼에 매핑하지 않음.
+- @Transient : 특정 필드를 컬럼에 매핑하지 않음(= 테이블 생성 시 해당 컬럼은 생성하지 않음)
 
-2. @Column
-	- 컬럼을 매핑할 때 사용
-	- name : 필드와 매핑할 테이블의 컬럼 이름
-	- insertable, updatable : 등록, 변경 가능여부
-	- nullable(DDL) : null 값의 허용 여부를 설정. false시 not null 제약조건
-	- unique(DDL) : 유니크 제약조건
-	- columnDefinition(DDL) : 데이터베이스 컬럼 정보를 직접 줄 수 있음.
-		> ex) varchar(100) default 'empty'
-	- length : 문자 길이 제약조건
+<br>
 
-3. @Enumrated
-    - Java enum 타입을 매핑할 때 사용.
-		```java
-		@Enumerated(EnumType.STRING)
-		private RoleType roleType;
-		```
-    - ORDINAL은 사용하면 안됨. 추후 Enum 타입값이 추가될 경우 순서로 인해 버그가 발생
-		> EnumType.ORDINAL : enum 순서를 DB에 저장   
-		> EnumType.STRING : enum 이름을 데이터베이스에 저장.   
-		> 기본 값이 EnumType.ORDINAL
+## 2. @Column
+- 컬럼을 매핑할 때 사용하는 어노테이션
+- name : 필드와 매핑할 테이블의 컬럼 이름
+- insertable, updatable : 등록, 변경 가능여부
+- nullable(DDL) : null 값의 허용 여부를 설정. false시 not null 제약조건
+- unique(DDL) : 유니크 제약조건 설정. 단, 일반적으로 유니크 제약조건은 @Table 의 속성으로 설정함.
+- columnDefinition(DDL) : 데이터베이스 컬럼 정보를 직접 줄 수 있음.
+	> ex) varchar(100) default 'empty'
+- length : 문자 길이 제약조건
 
-4. @Temporal 속성
-	- 날짜 타입(java.util.Date, java.util.Calendar)을 매핑할 때 사용
-	- LocalDate, LocalDateTime을 사용할 때는 생략 가능(최신 하이버네이트 지원)
-	- TemporalType.Date : 날짜, 데이터베이스 date 타입과 매핑
-	- TemporalType.TIME : 시간, 데이터베이스 time 타입과 매핑
-	- TemporalType.TIMESTAMP : 날짜와 시간, 데이터베이스 timestemp 타입과 매핑
+<br>
 
-5. @Lob
-	- 매핑하는 필드 타입이 문자면 CLOB 매핑, 나머지는 BLOB 매핑.
-	- LOB에는 속성이 없음.
+## 3. @Enumrated
+- Java enum 타입을 매핑할 때 사용.
+- ORDINAL과 STRING 속성이 존재 (기본 값 ORDINAL)
+	- EnumType.ORDINAL : enum 순서를 DB에 저장   
+	- EnumType.STRING : enum 이름을 데이터베이스에 저장.   
+- ORDINAL은 사용하면 안됨. 추후 Enum 타입값이 중간에 추가될 경우 데이터가 꼬이게 됨.
+```java
+	// Member.class
+	@Enumerated(EnumType.STRING)
+	private RoleType roleType;
+
+	...
+
+	// Main.class
+	Member member = new Member();
+	member.setId(1L);
+	member.setUsername("A");
+	member.setRoleType(RoleType.USER); 
+	//DB에 USER 로 저장됨. 만약 @Enumerated(EnumType.ORDINAL) 일 경우 1로 저장됨  
+	
+	em.persist(member);
+```
+
+<br>    
+
+## 4. @Temporal 속성
+- 날짜 타입(java.util.Date, java.util.Calendar)을 매핑할 때 사용
+- LocalDate, LocalDateTime을 사용할 때는 생략 가능(최신 하이버네이트 지원)
+- TemporalType.Date : 날짜, 데이터베이스 date 타입과 매핑
+- TemporalType.TIME : 시간, 데이터베이스 time 타입과 매핑
+- TemporalType.TIMESTAMP : 날짜와 시간, 데이터베이스 timestemp 타입과 매핑
+
+<br>
+
+## 5. @Lob
+- 매핑하는 필드 타입이 문자면 CLOB 매핑, 나머지는 BLOB 매핑.
+- LOB에는 속성이 없음.
+
+<br>
+
+## 6. @Transient
+- 테이블 필드와 매핑시키지 않도록 할때 사용
+- 주로 메모리상에서만 임시로 값을 저장하고 싶을 때 사용
+
+<br>
+
 
 # 11. 기본키 매핑
 1. 직접 할당
 	- @Id 어노테이션 사용.
-
+ 
 2. 값 자동생성
 	- @GeneratedValue 어노테이션 사용.
 	- 자동생성 전략
