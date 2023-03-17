@@ -874,33 +874,181 @@ public class OrderItem {
 <br>
 
 # 13. 양방향 연관관계와 연관관계의 주인
-1. 양방향 매핑
-	- 테이블 연관관계에서는 PK와 FK로 조인을 통해 양방향 연관관계를 맺을 수 있음. 단 객체 연관관계에서는 키가 되는 컬럼으로 양방향 연관관계를 맺을 수 없음. 
+## 1. 양방향 매핑
+	- 테이블 연관관계에서는 PK와 FK간 조인을 통해 양방향 연관관계를 맺을 수 있음. - 객체 연관관계에서는 키가 되는 컬럼으로 양방향 연관관계를 맺을 수 없음. 앞선 멤버와 팀 예제에서 멤버에서 팀으로 접근 가능하나, 팀에서 멤버로는 접근이 불가능함. 즉, 팀 입장에서 팀에 속한 멤버 리스트를 조회할 수 없는 상태임. 이를 위해 양방향 매핑을 사용해야 함. 
 	- mappedBy 구문을 사용하면 됨.
 
-2. 객체의 양방향 연관관계
-	- 양방향 X. 사실 2개의 단방향 연관관계를 갖음.
-	- 때문에 관계를 갖는 두 객체 모두 서로에 대한 참조 값이 있어야함.
+```java
+public class Member {
 
-3. 테이블의 양방향 연관관계
-	- 키값 하나로 양방향 연관관계를 갖음.
-	- 관계를 갖는 두 테이블 중 하나만 참조값을 갖으면 됨.
+	public Member() {
+		
+	}
 
-4. 연관관계의 주인
+	@Id @GeneratedValue
+	@Column(name = "MEMBER_ID")
+	private Long id;
+	
+	@Column(name = "USERNAME")
+	private String username;
+
+	//멤버입장에서는 다대일 관계
+	@ManyToOne
+	@JoinColumn(name = "TEAM_ID")
+	private Team team;
+
+	/// getter, setter ...
+
+}
+
+@Entity
+public class Team {
+
+	public Team() {
+		
+	}
+	@Id @GeneratedValue
+	@Column(name = "TEAM_ID")
+	private long id;
+	
+	@Column(name = "NAME")
+	private String name;
+	
+	// 팀입장에서는 일대다 관계이며 연관관계 대상과 매핑되는 컬럼은 team
+	@OneToMany(mappedBy="team")
+	private List<Member> members = new ArrayList<Member>();
+
+	/// getter, setter ...
+	
+}
+
+public static void main(String[] args) {
+		
+		...
+			
+			Team team = new Team();
+			team.setName("TeamA");
+			em.persist(team);
+			
+			Member member = new Member();
+			member.setUsername("member1");
+			member.setTeam(team);
+			em.persist(member);
+	
+			em.flush();
+			em.clear();
+			
+			Member findMember = em.find(Member.class, member.getId());
+
+			// Team에 대한 getMembers를 통해 팀에 속한 멤버리스트를 조회함.
+			List<Member> members= findMember.getTeam().getMembers();
+			
+			for(Member m : members) {
+				System.out.println(m.getUsername());
+			}
+		...
+	}
+```
+
+## 2. 객체와 테이블이 관계를 맺는 차이
+
+### 2.1. 객체 연관관계
+	- 객체간 양방향 연관관계는 사실 두개의 단방향 연관관계이며, 객체를 양방향으로 참조하려면 단방향 연관관계를 2개 만들어야 함.
+    	- Member > Team (단방향 연관관계 #1), Team > Member (단방향 연관관계 #2)
+
+### 2.2. 테이블 연관관계
+	- 테이블간 양방향 연관관계는 외래 키 하나로 가능함.
+    	- Member <-> Team (양방향 연관관계)
+
+### 2.3. 딜레마 발생
+    - 멤버의 팀을 CUD하는 방법은 Member.setTeam과 같이 Member에서 접근하는 방법과 Team.setMembers와 같이 Team에서 접근하는 방법이 있다. 즉, FK가 2개.
+    - 이렇게 FK가 두개가 되는 상황이 만들어지기에 JPA에서는 FK가 하나만 될 수 있도록 규칙을 정했다. 이 규칙이 바로 연관관계의 주인을 정하는 것임.
+
+## 3. 연관관계의 주인
 	- 객체의 두 관계중 하나를 연관관계의 주인으로 지정
-	- 연관관계의 주인만이 외래 키를 관리(등록, 수정)
-	- 주인이 아닌쪽은 읽기만 가능.
+	- 연관관계의 주인만이 외래 키를 관리(CUD)
+	- 주인이 아닌쪽은 읽기만 가능. (mappedBy)
 
-5. 누구를 주인으로?
-	- 외래 키가 있는 곳을 주인으로 정해라.
-	- Member.team이 연관관계의 주인.
-	- ManyToOne쪽이 연관관계의 주인.
+## 4. 누구를 주인으로?
+	- 외래 키가 있는 곳을 주인으로 정함. Member와 Team 은 다대 일이며 FK는 Member에 있으므로 Member.team이 연관관계의 주인이 됨.
 	- DB 테이블 기준으로 '다' 쪽이 연관관계의 주인 (FK를 갖는 곳)
-	- 멤버(주인) - 팀, 자동자 - 바퀴(주인)
 
-6. 양방향 매핑 시 가장 많이 하는 실수
-	- 연관관계의 주인에 값을 입력하지 않음.
+## 5. 양방향 매핑 시 가장 많이 하는 실수
 
+### 5.1. 연관관계의 주인에 값을 입력하지 않음.
+	- add(member) 시 Insert 쿼리가 나가지 않음.
+
+``` java
+	Team team = new Team();
+	team.setName("TeamA");
+	em.persist(team);
+			
+	Member member = new Member();
+	member.setUsername("member1");
+	em.persist(member);
+	
+	em.flush();
+	em.clear();
+			
+	// 연관관계의 따까리에게 insert하고 있으며, 이는 반영되지 않음.
+	team.getMembers().add(member);
+```
+
+### 5.2. 연관관계의 따까리에도 값을 입력하지 않음.
+	- 1차 캐시에 있는 데이터를 flush/clear 하지 않았을 때 연관관계의 주인에 값을 입력하면 제대로된 조회가 되지 않음.
+``` java
+	Team team = new Team();
+	team.setName("TeamA");
+	em.persist(team); // 1차 캐시에 team add
+			
+	Member member = new Member();
+	member.setUsername("member1");
+	member.setTeam(team);
+	em.persist(member); // 1차 캐시에 member add
+	
+	// 현재 1차 캐시에 들어있는 team의 member들을 조회하기에 조회 데이터가 없음. 
+	List<Member> members = team.getMembers();
+
+```
+
+	- flush/clear를 한다면 team.getMembers() 조회 시 DB에서 데이터를 가져오기에 정상적으로 조회됨.
+	- 이러한 특이 케이스로 인한 혼동이 생길 우려가 있으므로 일반적으로 연관관계의 주인과 따까리에 모두 데이터를 insert해줘야함.
+
+``` java
+	Team team = new Team();
+	team.setName("TeamA");
+	em.persist(team); // 1차 캐시에 team add
+			
+	Member member = new Member();
+	member.setUsername("member1");
+	member.setTeam(team);
+	em.persist(member); // 1차 캐시에 member add
+	
+	team.getMembers().add(member);
+
+	List<Member> members = team.getMembers();
+
+```
+	- 결론적으로 순수 객체 상태를 고려해서 항상 양쪽에 값을 설정해야함.
+	- 양쪽에 설정하는 과정을 단순화하기 위해 연관관계 편의 메소드를 생성한다.
+
+```java
+class Member{
+	
+	...
+
+	// setTeam을 할 경우 team.getMembers().add(this)를 통해 team의 members 에 추가하려는 현재 Member 객체를 add해준다.
+	public void setTeam(Team team) {
+		this.team = team;
+		team.getMembers().add(this);
+	}
+}
+```
+
+## 5.2. 양방향 매핑 정리
+	- 단방향 매핑만으로도 이미 연관관계 매핑은 완료
+	- 양방향 매핑은 반대 방향으로 조회 기능이 추가된 것 뿐이기에 양방향은 필요할 때 추가해도 됨.
+	- JPQL에서 역방향으로 탐색할 일이 많음
 
 # 14. 연관관계 매핑 시작
 1. 요건

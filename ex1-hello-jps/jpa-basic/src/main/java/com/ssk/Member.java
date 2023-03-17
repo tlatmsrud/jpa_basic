@@ -27,7 +27,7 @@ public class Member {
 	@Column(name = "USERNAME")
 	private String username;
 
-	//¸â¹öÀÔÀå¿¡¼­´Â ´Ù´ëÀÏ °ü°è
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½å¿¡ï¿½ï¿½ï¿½ï¿½ ï¿½Ù´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	@ManyToOne
 	@JoinColumn(name = "TEAM_ID")
 	private Team team;
@@ -54,6 +54,7 @@ public class Member {
 	
 	public void setTeam(Team team) {
 		this.team = team;
+		team.getMembers().add(this);
 	}
 
 }
