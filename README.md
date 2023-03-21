@@ -1255,3 +1255,115 @@ public class Member {
 	- 모든 연관관계에 지연 로딩을 사용해라
 	- 실무에서 즉시 로딩을 사용하지 마라
 	- 즉시로딩이 필요할 경우 JPQL fetch 조인이나 엔티티 그래프 기능을 사용해라.
+
+# 20. 영속성 전이 CASCADE
+
+## 1. 영속성 전이란
+	- 특정 엔티티를 영속 상태로 만들 때 연관된 엔티티도 함께 영속상태로 만들고 싶을때 사용
+	- ex) 부모 엔티티를 저장할 때 자식 엔티티도 함께 저장
+
+``` java
+
+@Entity
+public class Parent {
+
+	@Id
+	@GeneratedValue
+	private Long id;
+	
+	private String name;
+	
+	@OneToMany(mappedBy = "parent")
+	private List<Child> childList = new ArrayList<Child>();
+
+	public void addChild(Child child) {
+		childList.add(child);
+		child.setParent(this);
+	}
+	public Long getId() {
+		return id;
+	}
+	...
+}
+
+
+@Entity
+public class Child {
+
+	@Id
+	@GeneratedValue
+	private Long id;
+	
+	private String name;
+	
+	@ManyToOne
+	@JoinColumn(name = "parent_id")
+	private Parent parent;
+
+	...
+}
+
+
+	Parent parent = new Parent();
+		
+	Child child1 = new Child();
+	Child child2 = new Child();
+		
+	parent.addChild(child1);
+	parent.addChild(child2);
+			
+	
+	em.persist(parent);
+	em.persist(child1);
+	em.persist(child2);
+
+```
+    - 각각 persist를 해야 3개의 insert 쿼리가 나감.
+	- 만약 em.persis(child1)을 주석처리한다면 child1에 대한 insert쿼리가 나가지 않음.
+	- 이를 쉽게 하기 위해 부모 엔티티인 parent만 persist하면 관련된 자식 엔티티도 모두 persist 되게 하는 것이 영속성 전이이며, cascade = CascadeType.ALL 구문을 사용하여 처리 가능
+
+``` java
+@Entity
+public class Parent {
+
+	@Id
+	@GeneratedValue
+	private Long id;
+	
+	private String name;
+	
+	@OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+	private List<Child> childList = new ArrayList<Child>();
+
+	public void addChild(Child child) {
+		childList.add(child);
+		child.setParent(this);
+	}
+}
+```
+
+## 2. 영속성 전이 주의사항
+	- 영속성 전이는 연관관계를 매핑하는 것과 아무 관련이 없음
+	- 엔티티를 영속화할 때 연관된 엔티티도 함께 영속화하는 편리함을 제공
+	- 소유자가 하나일 때만 사용가능. 자식 엔티티가 다른 엔티티와 연관관계가 있을 경우 사용은 지양. 단일 엔티티에 종속정일때만 사용
+
+
+## 3. CASCADE의 종류
+	- 종류는 여러개가 있으나 거의 아래 두 개만 사용함
+	- ALL : 모두적용
+	- PERSIST : 영속
+
+# 21. 고아객체
+## 1. 고아객체란
+
+	- 부모 엔티티와 연관관계가 끊어진 자식 엔티티를 자동으로 삭제
+	- orphanRemoval = true
+
+## 2. 고아객체 주의사항
+	- 참조하는 곳이 하나일 때 사용해애함
+	- 부모를 제거하면 자식도 제거됨.
+
+## 3. 영속성 전이 + 고아 객체, 생명주기
+	- CascadeType.ALL + orphanRemovel = true
+	- 스스로 생명주기를 관리하는 엔티티는 em.persist()로 영속화, em.remove()로 제거
+	- 두 옵션을 모두 활성화 하면 부모 엔티티를 통해서 자식의 생명 주기를 관리할 수 있음.
