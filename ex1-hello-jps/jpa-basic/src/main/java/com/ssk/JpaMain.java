@@ -25,21 +25,22 @@ public class JpaMain {
 		
 		try{
 			
+			Member member1 = new Member();
+			member1.setUsername("member1");
+			em.persist(member1);
+			
 			Team team = new Team();
-			team.setName("TeamA");
+			team.setName("TEamA");
 			em.persist(team);
 			
-			Member member = new Member();
-			member.setUsername("member1");
-			member.setTeam(team);
-			em.persist(member);
-
+			member1.setTeam(team);
 			
-			List<Member> members = team.getMembers();
+			em.flush();
+			em.clear();
 			
-			for(Member m : members) {
-				System.out.println(m.getUsername());
-			}
+			Member refMember = em.find(Member.class, member1.getId());
+			System.out.println(refMember.getTeam().getClass());
+			
 			tx.commit();
 		}catch(Exception e) {
 			tx.rollback();

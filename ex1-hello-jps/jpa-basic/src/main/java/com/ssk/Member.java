@@ -3,6 +3,7 @@ package com.ssk;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
@@ -27,8 +28,7 @@ public class Member {
 	@Column(name = "USERNAME")
 	private String username;
 
-	//������忡���� �ٴ��� ����
-	@ManyToOne
+	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "TEAM_ID")
 	private Team team;
 

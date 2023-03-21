@@ -1051,26 +1051,26 @@ class Member{
 	- JPQL에서 역방향으로 탐색할 일이 많음
 
 # 14. 연관관계 매핑 시작
-1. 요건
+## 1. 요건
 	> 초간단 쇼핑몰 테이블 구성  
 	> 사용자는 여러건의 주문을 할 수 있다.
 
-2. 테이블 구조
+## 2. 테이블 구조
    ![jap_shop_erd](./jpa_shop_erd.PNG)
    - 유저는 여러 주문을 하거나,주문을 하지 않을 수 있다. (one 대 many or zero)
    - 하나의 주문에 여러 상품이 포함될 수 있고, 하나의 상품은 여러 주문에 포함되거나 없을 수 있다.(many 대 many >> one 대 many, many or zero 대 one)
 
-3. 객체구조
+## 3. 객체구조
    - Member와 Order : 양방향 연관관계 매핑 (Member 내 orders)
    - Order와 OrderItem : 양방향 연관관계 매핑 (Order 내 orderItems)
 
-# 15. 연관관계
-1. 연관관계 매핑 시 고려사항
+## # 15. 연관관계
+# 1. 연관관계 매핑 시 고려사항
 	1) 다대일 : @ManyToOne
 	2) 일대다 : @OneToMany
 	3) 일대일 : @OneToOne
 
-2. 단방향, 양방향
+## 2. 단방향, 양방향
    1. 테이블 
       - 외래키 하나로 양쪽 조인 가능. 방향이라는 개념이 없음
    1. 객체 
@@ -1078,31 +1078,31 @@ class Member{
       - 한쪽만 참조하면 단방향
       - 양쪽이 서로 참조하면 양방향
 
-3. 다대일 [N:1]
+## 3. 다대일 [N:1]
     - 멤버와 팀은 N : 1 관계
     - 멤버 객체가 연관관계의 주인
 
-4. 다대일 양방향
+## 4. 다대일 양방향
    	- 팀 객체에 @OneToMany(mappedBy = "team")
 	- 양쪽을 서로 참조하도록 개발
 
-5. 일대일 [1:1]
+## 5. 일대일 [1:1]
    	- 일대일 관계는 그 반대도 일대일
    	- 주 테이블이나 대상 테이블 중 외래키 선택 가능
    	- 외래키에 유니크 제약주건 추가
   		> 유니크 제약조건 = 유일 키 제약조건  
 		> 특정 컬럼에 대해 자료가 중복되지 않게 하는 것을 의미하며, 중ㅈ복은 허용하지 않으나, NULL은 중복될 수 있다.
 
-6. 대다대 [N:N]
+## 6. 대다대 [N:N]
    	- 다대다는 사용하지 않고, 중간 엔티티를 생성 후 일대다, 다대일 연관관계 매핑을 해야함.
 
 
 # 16. 상속관계 매핑
-1. 정의
+## 1. 정의
    - 객체의 상속 구조와 DB의 슈퍼타입 서브타입 관계를 매핑하는 것. RDB의 슈퍼타입 서브타입 관계라는 모델링 기법이 객체 상속과 유사함.
    - 상속관계 매핑 전략은 총 3가지로 조인전략, 단일테이블 전략, 구현클래스마다 테이블 전략이 있음.
 
-2. 상속관계 매핑 전략
+## 2. 상속관계 매핑 전략
    1. 조인전략
       - 부모클래스와 자식클래스를 각각 테이블로 만든 뒤 식별관계로 설정
       - 자식 클래스 구분자인 DTYPE 생성
@@ -1114,7 +1114,7 @@ class Member{
       - 자식클래스 테이블 생성 시 부모 클래스 필드를 추가
 		![avatar_table_strategy](avatar_table_strategy.PNG)
 		  
-3. 장단점
+## 3. 장단점
    1. 조인전략
       - 장점 : 테이블 정규화, 외래 키 참조 무결성 제약조건 활용 가능, 저장공간 효율화
       - 단점 : 조회 시 조인을 많이 사용하여 성능 저하, 조회 쿼리가 복잡, 데이터 저장 시 INSERT SQL 2번 호출
@@ -1128,35 +1128,130 @@ class Member{
       - 단점 : 조회 시 모든 자식 테이블을 함께 조회할 경우 성능이 느림(UNION)
 
 # 17.Mapped Superclass
-1. 정의
+## 1. 정의
    - 공통적으로 사용할 속성들을 지정하는 클래스이며, 자식 클래스에게만 매핑 정보를 제공하는 클래스. 
    - 상속관계 매핑, 엔티티, 테이블과 매핑하는 클래스가 아님.
    - 직접 생성해서 사용할 일이 없으므로 추상 클래스로 생성 권장.
    
-2. 기능
+## 2. 기능
    - 테이블과 관계 없고, 단순히 엔티티가 공통으로 사용하는 매핑 정보를 모으는 역할
    - 주로 등록일, 수정일, 등록자, 수정자 같은 전체 엔티티에서 공통으로 적용하는 정보를 모을 때 사용
    - 실무에서 BaseEntity로 활용
 
-3. 참고
+## 3. 참고
    - @Entity 클래스는 엔티티나 @MappedSuperclass로 지정한 클래스만 상속이 가능하다. 
 
 # 18. 프록시
-1. 프록시 기초
+## 1. 프록시 기초
 	- em.find() vs em.getReference()
 	- em.find() : 데이터베이스를 통해 실제 엔티티 객체 조회
 	- em.getReference() : 데이터베이스 조회를 미루는 가짜 엔티티(=프록시) 객체 조회
 
-2. 프록시 특징
+## 2. 프록시 객체의 초기화
+``` java
+	Member member = em.getReference(Member.class, id);
+	member.getName();
+```
+
+	1) getReference를 통해 Member 프록시 객체를 생성함. 이때 Proxy의 target은 null.
+	2) member.getName() 과 같이 프록시 객체의 메서드 호출 시 영속성 target에 대한 초기화를 영속성 컨텍스트로 요청
+	3) 영속성 컨텍스트에서 DB를 조회하여 Entity를 생성
+	4) target을 해당 Entity로 초기화
+	5) target에 대한 getName()을 호출하여 값을 조회함.
+
+
+## 3. 프록시 특징
 	- 실제 클래스를 상속 받아서 만들어짐
 	- 실제 클래스와 겉 모양이 같다.
 	- 사용하는 입장에서 진짜 객체인지 프록시 객체인지 구분하지 않고 사용하면 됨.
 	- 프록시 객체는 처음 사용할 때 한번만 초기화
+	- 프록시 객체는 실제 객체의 참조를 보관
 	- 초기화 시 프록시 객체가 실제 엔티티로 바뀌는게 아님. 프록시 객체를 통해 실제 엔티티에 접근이 가능한 구조임.
-	- 프록시 객체는 원본 엔티티를 상속받음. 따라서 타입 체크시 주의( == 비교 실패, 대신 instance of 사용)
+	- 프록시 객체는 원본 엔티티를 상속받음. 따라서 타입 체크시 주의( '==' 연산 사용할 시 비교 실패. instance of 사용해야함)
 	- 영속성 컨텍스트에 찾는 엔티티가 이미 있으면 em.getReference()를 호출해도 실제 엔티티 반환
 	- 영속성 컨텍스트의 도움을 받을 수 없는 준영속 상태일 때, 프록시를 초기화하면 문제 발생
 
-3. 프록시 확인
+
+
+## 4. 프록시 확인
 	- 프록시 인스턴스의 초기화 여부 확인
 		- PersistenceUnitUtil.isLoaded(Object entity)
+
+# 19. 즉시 로딩과 지연 로딩
+
+## 1. 지연로딩
+	- 지연로딩 LAZY를 사용할 경우 해당 객체를 프록시로 조회함
+	- 프록시 메서드를 호출할때 초기화가 일어남
+	- 비지니스 로직상 엔티티 내 특정 객체를 같이 조회하지 않은 경우가 많을 경우 지연로딩을 사용한다. 
+		ex) Member를 조회할 때 Team을 같이 조회하지 않는 케이스가 많다.
+
+``` java
+
+public class Member {
+
+	@Id @GeneratedValue
+	@Column(name = "MEMBER_ID")
+	private Long id;
+	
+	@Column(name = "USERNAME")
+	private String username;
+
+	@ManyToOne(fetch = FetchType.LAZY) // 지연로딩 LAZY
+	@JoinColumn(name = "TEAM_ID")
+	private Team team;
+    ...
+}
+
+...
+	Member member1 = new Member();
+	member1.setUsername("member1");
+	em.persist(member1);
+			
+	Team team = new Team();
+	team.setName("TEamA");
+	em.persist(team);
+			
+	member1.setTeam(team);
+			
+	em.flush();
+	em.clear();
+			
+	Member refMember = em.find(Member.class, member1.getId());
+	System.out.println(refMember.getTeam().getClass()); // Team 은 프록시 타입
+```
+## 2. 즉시로딩
+	- 즉시로딩 EAGER를 사용할 경우 프록시를 사용하지 않음
+	- 비지니스 로직 상 엔티티 내 특정 객체와 함께 조회하는 경우가 많을 경우 즉시로딩을 사용한다.
+		ex) Member를 조회할 때 Team을 거의 항상 같이 조회한다.
+
+``` java
+	public class Member {
+
+		@Id @GeneratedValue
+		@Column(name = "MEMBER_ID")
+		private Long id;
+		
+		@Column(name = "USERNAME")
+		private String username;
+
+		@ManyToOne(fetch = FetchType.EAGER) // 지연로딩 LAZY
+		@JoinColumn(name = "TEAM_ID")
+		private Team team;
+		...
+	}
+```
+
+## 3. 프록시와 즉시로딩 주의
+  - 가급적 지연 로딩만 사용
+  - 즉시 로딩을 적용하면 예상치 못한 에러가 발생할 수 있음.
+	> 테이블 조인으로 인한 성능저하
+
+  - 즉시 로딩은 JPQL에서 N+1 문제를 일으킨다.
+  - @ManyToOne, @OneToOne은 기본이 즉시 로딩 -> LAZY로 설정해야함
+  - @OneToMany, @ManyToMany는 기본이 지연 로딩
+  - 실무에서는 기본으로 LAZY로 하고 즉시로딩이 필요할 경우 JPQL에서 fetch 조인을 사용해야함.
+
+## 4. 지연 로딩 활용 - 실무
+	- 모든 연관관계에 지연 로딩을 사용해라
+	- 실무에서 즉시 로딩을 사용하지 마라
+	- 즉시로딩이 필요할 경우 JPQL fetch 조인이나 엔티티 그래프 기능을 사용해라.
