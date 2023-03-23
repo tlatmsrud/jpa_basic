@@ -1468,3 +1468,32 @@ public class Parent {
 	// adrs1.equals(adrs2) : true (단, equals 메서드를 재정의했다고 가정)
 
 ```
+
+# 26. 값 타입 컬렉션
+## 1. 값 타입 컬렉션이란
+	- 값 타입을 저장하는 컬렉션 객체
+	- 값 타입을 하나 이상 저장하려면 컬렉션에 보관하고 @ElementCollection, @CollectionTable 어노테이션을 사용하면 됨.
+	- 값 타입 컬렉션은 영속성 전이(Cascade) + 고아객체 제거(Oprhan remove) 기능을 필수적으로 가진다고 볼 수 있다.
+	- 페치 전략은 LAZY가 기본 적용된다.
+
+
+``` java
+	@Entity
+	public class Member{
+
+		...
+
+		@ElementCollection
+		@CollectionTable(name = "FAVORITE_FOODS"
+			,joinColumns = @JoinColumn(name = "MEMBER_ID"))
+		@Column(name = "FOOD_NAME")
+		private Set<String> favoriteFoods = new HashSet<String>();
+
+		...
+	}
+```
+
+## 2. 값 타입 컬렉션의 제약사항
+	- 값 타입은 식별자 개념이 없어 원본 데이터를 쉽게 찾아서 변경할 수 없음
+	- 이로 인해 값 타입 컬렉션에 변경 사항이 발생하면, 값 타입 컬렉션이 매핑된 테이블의 연관된 모든 데이터를 삭제하고, 현재 값 타입 컬렉션 객체에 있는 모든 값을 테이블에 다시 저장한다.
+	- 실무에서는 값 타입 컬렉션이 매핑된 테이블에 데이터가 많다면 값 타입 컬렉션 대신 일대다 관계를 고려해야 한다.
