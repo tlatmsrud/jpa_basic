@@ -1497,3 +1497,85 @@ public class Parent {
 	- 값 타입은 식별자 개념이 없어 원본 데이터를 쉽게 찾아서 변경할 수 없음
 	- 이로 인해 값 타입 컬렉션에 변경 사항이 발생하면, 값 타입 컬렉션이 매핑된 테이블의 연관된 모든 데이터를 삭제하고, 현재 값 타입 컬렉션 객체에 있는 모든 값을 테이블에 다시 저장한다.
 	- 실무에서는 값 타입 컬렉션이 매핑된 테이블에 데이터가 많다면 값 타입 컬렉션 대신 일대다 관계를 고려해야 한다.
+
+# 27. JPQL
+
+## 1. 특징
+	- JPQL은 객체지향 쿼리 언어이다. 따라서 테이블을 대상으로 쿼리하는 게 아니라 엔티티를 대상으로 쿼리한다.
+	- JPQL은 SQL을 추상화해서 특정 데이터베이스 SQL에 의존하지 않는다.
+	- JPQL은 결국 SQL로 변환된다.
+
+## 2. JPQL 문법
+	- Select 문법은 일반 쿼리와 동일하다.
+	- Update, Delete는 벌크연산으로 처리된다.
+	- 엔티티와 속성은 대소문자를 구문하므로 객체와 동일한 이름으로 사용해야한다.
+	- SELECT, FROM, WHERE 과 같은 JPQL 키워드는 대소문자를 구분하지 않는다.
+	- JPQL에는 테이블의 이름이 아닌 엔티티 이름을 사용한다.
+	- 별칭이 필수이다(m)
+		ex) select m from Member as m 
+
+## 3. TypeQuery와 Query
+	- TypeQuerty는 반환 값이 명확할 때, Query는 불명확할때 사용한다.
+``` java
+	// 반환 타입이 Member 클래스로 명확
+	TypedQuery<Member> typedQuery = 
+		em.createQuery("select m from Member m", Member.class);
+    
+	// 반환 타입이 username, id로 불명확
+	Query query = 
+		em.createQuery("select m.username, m.id from Member m");
+		
+```
+
+## 4. 결과 조회 API
+	- query.getResultList() : 결과가 하나 이상일 때 리스트를 반환하고, 결과가 없을 시 빈 리스트를 반환한다.
+
+	- query.getSingleResult() : 결과가 정확히 하나일 때 단일 객체를 반환하고, 결과가 없으면 NoResultException, 결과가 둘 이상이면 NonUniqueResultException을 예외를 발생시킨다.
+
+	- getSingleResult를 사용하면 예외가 발생할 수 있기에 try, catch를 통해 예외 핸들링을 해줘야한다. Spring Data JPA 값이 없을 경우 예외를 발생시키는 이 부분을 개선하여 null 혹은 Optional을 리턴하도록 구현되어 있다.
+
+``` java
+	TypedQuery<Member> list = 
+		em.createQuery("select m from Member m", Member.class);
+
+	// 결과가 하나 이상일 것을 예상하여 getResultList를 통해 반환받음
+	List<Member> memberList = list.getResultList();
+    
+
+	TypedQuery<Member> single = 
+		em.createQuery("select m from Member m where m.id = 1L", Member.class);
+
+	// 결과가 하나일 것을 예상하여 getSingleResult를 통해 반환받음.
+	// 만약 결과가 2개 이상이거나 없을 경우 예외가 발생함.
+    Member singleMember = single.getSingleResult();
+```
+
+## 5. 파라미터 바인딩
+	- 이름 기준과 위치 기준으로 바인딩하는 방법이 있다.
+	- 이름 기준으로 사용 시 쿼리에 ":" 구문을 사용하며, 위치 기준으로 사용 시 "?번호"를 사용한다.
+	- 위치 기반은 중간에 조건이 하나 더 추가되면 번호가 밀려 에러를 유발수 있으므로 이름 기준으로 사용하는 것이 권장된다.
+	- 메서드 체이닝을 사용하면 한번에 처리 가능하며, 일반적으로 메서드 체이닝을 통해 사용함.
+
+``` java
+	// 이름 기준 파라미터 바인딩
+	TypedQuery<Member> query 
+		= em.createQuery("select m from Member m where m.id = :id and m.username = :username", Member.class);
+    query.setParameter("username", "심승경");
+    query.setParameter("id", 1L);
+
+    Member singleMember = query.getSingleResult();
+
+	// 메서드 체이닝 방식
+	Member singleResult 
+		= em.createQuery("select m from Member m where m.id = :id and m.username = :username", Member.class)
+            .setParameter("username", "심승경")
+            .setParameter("id", 1L)
+            .getSingleResult();
+	
+	// 위치 기준 파라미터 바인딩
+	singleResult = 
+		em.createQuery("select m from Member m where m.id = ?1 and m.username = ?2", Member.class)
+            .setParameter(1, 1L)
+            .setParameter(2, "심승경")
+            .getSingleResult();
+```
