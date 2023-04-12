@@ -1532,7 +1532,7 @@ public class Parent {
 
 	- query.getSingleResult() : 결과가 정확히 하나일 때 단일 객체를 반환하고, 결과가 없으면 NoResultException, 결과가 둘 이상이면 NonUniqueResultException을 예외를 발생시킨다.
 
-	- getSingleResult를 사용하면 예외가 발생할 수 있기에 try, catch를 통해 예외 핸들링을 해줘야한다. Spring Data JPA 값이 없을 경우 예외를 발생시키는 이 부분을 개선하여 null 혹은 Optional을 리턴하도록 구현되어 있다.
+	- getSingleResult를 사용하면 예외가 발생할 수 있기에 try, catch를 통해 예외 핸들링을 해줘야한다. Spring Data JPA에서는 값이 없을 경우 예외를 발생시키는 부분을 개선하였으며 null 혹은 Optional 객체를 리턴하도록 구현되어 있다.
 
 ``` java
 	TypedQuery<Member> list = 
