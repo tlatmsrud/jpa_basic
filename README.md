@@ -1805,7 +1805,7 @@ public class Parent {
 	null
 ```
 
-	- 세타 조인을 위해 member 이름을 TeamA로 하나 생성한 후 테스트를 진행하였다. 쿼리 확인 결과 두 테이블을 크로스 조인 후 조건에 해당하는 값만 조회한다.
+	- 테스트를 위해 member 이름이 teamA인 멤버를 생성하였다. 실제 실행된 쿼리 확인 결과 두 테이블을 크로스 조인 후 조건에 해당하는 값만 조회한다.
 ``` java
 	Member thetaMember = new Member();
     thetaMember.setUsername("teamA");
