@@ -1698,3 +1698,144 @@ public class Parent {
 	Member{id=9, username='멤버8', age=8}
 	Member{id=10, username='멤버9', age=9}
 ```
+
+# 30. 조인
+
+## 1. 개요
+	- JPQL에서 사용하는 조인은 내부조인, 외부조인, 세타 조인이 있다.
+  
+## 2. 내부조인
+	- 연관 관계가 맺어진 엔티티들에 대한 Inner 조인을 말하며 INNER JOIN의 INNER는 생략 가능하다.
+``` java
+	SELECT m FROM Member m [INNER] JOIN m.team t
+```
+
+## 3. 외부조인
+	- 연관 관계가 맺어진 엔티티들에 대한 Left Outer 조인을 말하며 LEFT OUTER JOIN의 OUTER는 생략 가능하다.
+``` java
+	SELECT m FROM Member m LEFT [OUTER] JOIN m.team t
+```
+
+## 4. 세타 조인
+	- 연관 관계와 상관없이 모든 엔티티들에 대한 조인을 말한다.
+``` java
+	SELECT count(m) FROM Member m, Team t WHERE m.username = t.name
+```
+
+## 5. 조인 예제
+	- 테스트를 위해 teamA와 teamB를 생성하고 멤버 0부터 9까지는 teamA, 멤버 10부터 19까지는 teamB에 속하도록 하고, 멤버 20부터 29까지는 팀이 없도록 셋팅했다. 코드는 아래와 같다.
+``` java
+
+	Team teamA = new Team();
+    teamA.setName("teamA");
+    em.persist(teamA);
+
+    Team teamB = new Team();
+    teamB.setName("teamB");
+    em.persist(teamB);
+
+    for(int i =0 ; i< 10 ; i++){
+        Member member = new Member();
+        member.setUsername("멤버"+i);
+        member.setAge(i);
+        member.changeTeam(teamA);
+        em.persist(member);
+    }
+
+    for(int i =10 ; i< 20 ; i++){
+        Member member = new Member();
+        member.setUsername("멤버"+i);
+        member.setAge(i);
+        member.changeTeam(teamB);
+        em.persist(member);
+    }
+
+    for(int i =20 ; i< 30 ; i++){
+        Member member = new Member();
+        member.setUsername("멤버"+i);
+        member.setAge(i);
+        em.persist(member);
+    }
+```
+
+	- Inner join JPQL 실행 시 team이 존재하는 Member 정보만을 리턴한다.
+``` java
+	String innerJoinQuery = "select m from Member m inner join m.team t";
+    List<Member> list = em.createQuery(innerJoinQuery,Member.class)
+    	.getResultList();
+
+    for(Member member : list){
+        System.out.println(member.toString());
+        System.out.println(member.getTeam());
+    }
+
+	// 출력 결과
+	Member{id=3, username='멤버0', age=0}
+	Team{id=1, name='teamA'}
+	Member{id=4, username='멤버1', age=1}
+	Team{id=1, name='teamA'}
+	...
+	Member{id=21, username='멤버18', age=18}
+	Team{id=2, name='teamB'}
+	Member{id=22, username='멤버19', age=19}
+	Team{id=2, name='teamB'}
+```
+
+	- Left Join JPQL 실행 시 team이 존재하지 않는 Member 정보도 함께 리턴하며 team은 null로 리턴한다.
+
+``` java
+ 	String leftJoinQuery = "select m from Member m left join m.team t";
+    List<Member> list2 = em.createQuery(leftJoinQuery,Member.class)
+        .getResultList();
+
+    for(Member member : list2){
+        System.out.println(member.toString());
+        System.out.println(member.getTeam());
+    }
+
+	// 출력 결과
+	Member{id=3, username='멤버0', age=0}
+	Team{id=1, name='teamA'}
+	Member{id=4, username='멤버1', age=1}
+	Team{id=1, name='teamA'}
+	...
+	Member{id=31, username='멤버28', age=28}
+	null
+	Member{id=32, username='멤버29', age=29}
+	null
+```
+
+	- 세타 조인을 위해 member 이름을 TeamA로 하나 생성한 후 테스트를 진행하였다. 쿼리 확인 결과 두 테이블을 크로스 조인 후 조건에 해당하는 값만 조회한다.
+``` java
+	Member thetaMember = new Member();
+    thetaMember.setUsername("teamA");
+    thetaMember.changeTeam(teamA);
+    em.persist(thetaMember);
+
+    String thetaJoinQuery = "select m from Member m, Team t where m.username = t.name";
+    List<Member> list3 = em.createQuery(thetaJoinQuery,Member.class)
+        .getResultList();
+
+    for(Member member : list3){
+        System.out.println(member.toString());
+        System.out.println(member.getTeam());
+    }
+
+	// 출력 결과
+	Member{id=33, username='teamA', age=0}
+	Team{id=1, name='teamA'}
+
+```
+
+## 6. 조인 대상 필터링
+	- SQL에서 사용하던 on과 동일하게 사용하면 된다.
+	- 내부조인 및 외부조인도 동일한 방식으로 사용 가능하다.
+``` java
+	// 내부 조인에 대한 필터링 - 회원과 팀을 조인하면서, 팀 이름이 A인 팀만 조인
+	JPQL : SELECT m, t FROM Member m LEFT JOIN m.team t ON t.name = 'A'
+	SQL : SELECT m.*, t.* FROM Member m LEFT JOIN Team t ON m.team_id = t.id and t.name = 'A'
+
+	// 외부 조인에 대한 필터링 - 회원의 이름과 팀 이름이 같은 대상 외부조인
+	JPQL : SELECT m, t FROM Member m LEFT JOIN Team t ON m.username = t.name
+	SQL : SELECT m.*, t.* FROM Member m LEFT JOIN Team t ON m.username = t.name
+```
