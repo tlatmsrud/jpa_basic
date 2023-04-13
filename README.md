@@ -1579,3 +1579,122 @@ public class Parent {
             .setParameter(2, "심승경")
             .getSingleResult();
 ```
+<br>
+
+# 28. 프로젝션
+## 1. 정의
+	- SELECT 절에 조회할 대상을 지정하는 것.
+	- 조회된 대상은 모두 영속성 컨텍스트에서 관리된다.
+
+## 2. 조회할 대상
+	- 조회할 대상( = 프로젝션 대상)은 엔티티, 임베디드 타입, 스칼라 타입(숫자, 문자 등 기본 데이터 타입)이 있음.
+
+``` java
+
+	SELECT m FROM Member m // Member 엔티티를 조회하는 엔티티 프로젝션
+
+	SELEECT m.team FROM Member m // Member 엔티티와 관계를 맺고 있는 Team 엔티티를 조회하는 엔티티 프로젝션
+
+	SELECT m.address FROM Member m // Member 엔티티에 임베디드 타입인 address를 조회하는 임베디드 타입 프로젝션
+
+	SELECT m.username, m.age FROM Member m // 기본 데이터 타입들을 조회하는 스칼라 타입 프로젝션
+```
+
+## 3. 여러 값 조회
+	- 한 로우에 여러 값을 조회하면 반환 값이 명확하지 않다는 뜻이다. 즉 기본적으로 Query 타입으로 조회될 것이며, 이때 여러 로우를 조회하는 getResultList 사용 시에는 결과를 ArrayList<Object> 형태로 리턴받고, getSingleResult 사용 시에는 결과를 Object 형태로 리턴받는다. 
+![Query 타입의 결과형태](https://user-images.githubusercontent.com/9374562/231656420-81069621-df62-4668-b0ad-45f38455fad3.jpg)
+	
+	- 이때 조회한 로우의 속성들을 각각 조회하고 싶다면 Object를 Object[] 로 캐스팅해야 한다.
+  
+``` java
+	// Query 타입 조회 방법
+	Object result2 = 
+		em.createQuery("select m.username, m.id from Member m where m.id = 1L").getSingleResult();
+
+	Object[] objects = (Object[])result2;
+	System.out.println(objects[0]); // username
+    System.out.println(objects[1]); // id
+```
+	- 이러한 메커니즘때문에 여러 값을 조회하는 방법은 
+	1) 앞서 언급한 Query 타입으로 조회하는 방법
+	2) 반환 값을 Object[]로 받는 TypedQuery 타입으로 조회하는 방법
+	3) new 명령어로 조회하는 방법이 있다.
+
+``` java
+	// TypedQuery 타입 조회 방법 == Object[] 타입 조회
+	Object[] result3 = 
+		em.createQuery("select m.username, m.id from Member m where m.id = 1L",Object[].class).getSingleResult();
+        System.out.println(result3[0]); // username
+        System.out.println(result3[1]); // id
+```
+	- TypedQuery를 통해 Object[].class로 조회 시 따로 캐스팅하는 코드를 작성하지 않아도 된다는 장점이 있다.
+
+``` java
+	// new 생성자를 통한 조회
+	MemberDto result3 = 
+		em.createQuery("select new jqpl.MemberDto(m.id, m.username) from Member m where m.id = 1L",MemberDto.class).getSingleResult();
+        System.out.println(result3.getId()); // username
+        System.out.println(result3.getUsername()); // id
+
+	
+	...
+	// MemberDto.java
+	public class MemberDto {
+
+    	private Long id;
+
+    	private String username;
+
+    	public MemberDto(Long id, String username) {
+        	this.id = id;
+        	this.username = username;
+    	}
+		...
+		// getter, setter
+	}
+
+```
+	- new 생성자를 사용할 경우 다음과 같이 MemberDto 클래스를 생성하고 JPQL에서 조회할 형태에 맞는 생성자를 생성해줘야한다.
+	- 세 가지 방법 중 가장 깔끔하나 JPQL에서 사용 시 풀 패키지 경로를 넣어야한다는 단점이 있다. 하지만 쿼리 DSL에서 극복되었으므로 이 방식을 사용하는 것이 권장된다. 
+
+# 29. 페이징 API
+
+## 1. 개요
+	- JPA는 페이징을 다음 두 API로 추상화한다.
+	- setFirstResult(int startPosition) : 조회 시작 위치
+	- setMaxResults(int maxResult) : 조회할 데이터 수
+	- 실제 사용되는 쿼리는 설정한 Database 방언에 맞게 실행된다.
+
+## 2. 예제
+
+``` java
+	for(int i =0 ; i< 100 ; i++){
+        Member member = new Member();
+        member.setUsername("멤버"+i);
+        member.setAge(i);
+        em.persist(member);
+    }
+
+	// 0번째부터 시작해서 10개의 데이터를 조회한다.
+    List<Member> list = 
+		em.createQuery("select m from Member m order by m.age asc",Member.class)
+            .setFirstResult(0)
+            .setMaxResults(10)
+            .getResultList();
+
+    for(Member member : list){
+        System.out.println(member.toString());
+    }
+
+	//실행결과
+	Member{id=1, username='멤버0', age=0}
+	Member{id=2, username='멤버1', age=1}
+	Member{id=3, username='멤버2', age=2}
+	Member{id=4, username='멤버3', age=3}
+	Member{id=5, username='멤버4', age=4}
+	Member{id=6, username='멤버5', age=5}
+	Member{id=7, username='멤버6', age=6}
+	Member{id=8, username='멤버7', age=7}
+	Member{id=9, username='멤버8', age=8}
+	Member{id=10, username='멤버9', age=9}
+```
